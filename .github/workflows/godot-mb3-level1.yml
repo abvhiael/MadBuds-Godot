@@ -24,3 +24,5 @@ jobs:
         run: ./Godot_v4.4.1-stable_linux.x86_64 --headless --path . --script res://tests/test_animation_assets.gd
       - name: Focused gameplay contract tests
         run: ./Godot_v4.4.1-stable_linux.x86_64 --headless --path . --script res://tests/test_kush_contract.gd
+      - name: Level 2 real-scene gameplay integration
+        run: ./Godot_v4.4.1-stable_linux.x86_64 --headless --path . --script res://tests/test_mb3_level2.gd
