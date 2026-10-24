@@ -11,6 +11,10 @@ var shots := 0
 var aim_angle := -35.0
 var launch_power := 0.7
 var target_hit := false
+var resolution_elapsed := 0.0
+var settle_elapsed := 0.0
+const MAX_SHOT_SECONDS := 14.0
+const SETTLE_SECONDS := 1.0
 
 @onready var status_label: Label = $CanvasLayer/HUD/Status
 @onready var guide_label: Label = $CanvasLayer/HUD/Guide
@@ -27,6 +31,8 @@ func spawn_bud() -> void:
 	add_child(bud)
 	bud.position = LAUNCH_POSITION
 	bud.body_entered.connect(_on_body_entered)
+	resolution_elapsed = 0.0
+	settle_elapsed = 0.0
 	bud.ability_activated.connect(_on_ability_activated)
 	bud.ability_expired.connect(_on_ability_expired)
 	bud.collided_with_object.connect(_on_bud_collision)
@@ -55,12 +61,20 @@ func _unhandled_input(event: InputEvent) -> void:
 				spawn_bud()
 		refresh_hud()
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if not is_instance_valid(bud):
 		return
-	if bud.launched and (bud.position.y > 900.0 or bud.position.x > 1500.0 or bud.position.x < -150.0):
+	if bud.launched:
+		resolution_elapsed += delta
+		if bud.linear_velocity.length() < 22.0 and not bud.ability_active:
+			settle_elapsed += delta
+		else:
+			settle_elapsed = 0.0
+	if bud.launched and (target_hit or settle_elapsed >= SETTLE_SECONDS or resolution_elapsed >= MAX_SHOT_SECONDS or bud.position.y > 900.0 or bud.position.x > 1500.0 or bud.position.x < -150.0):
 		bud.reset_for_next_shot()
 		bud.position = LAUNCH_POSITION
+		resolution_elapsed = 0.0
+		settle_elapsed = 0.0
 		_set_animation("idle")
 		refresh_hud()
 	queue_redraw()
@@ -85,12 +99,8 @@ func _on_bud_collision(body: Node, speed: float, impact_mass: float, modifier: f
 			refresh_hud()
 	_set_animation("impact")
 
-func _on_body_entered(body: Node) -> void:
-	if body == target and not target_hit:
-		if not (target as MadBudsDestructible).broken:
-			return
-		target_hit = true
-		refresh_hud()
+func _on_body_entered(_body: Node) -> void:
+	pass
 
 func refresh_hud() -> void:
 	if not is_instance_valid(bud):
@@ -99,7 +109,7 @@ func refresh_hud() -> void:
 	if bud.launched:
 		state = "WRECKING BALL!" if bud.ability_active else "IN FLIGHT"
 	if target_hit:
-		state = "TARGET HIT!"
+		state = "TARGET DESTROYED!"
 	status_label.text = "KUSH KRUSHER  |  %s  |  Shots: %d" % [state, shots]
 	guide_label.text = "Arrows: aim/power  |  SPACE: launch / Wrecking Ball  |  R: reset  |  Power %d%%  |  Angle %.0f°" % [roundi(launch_power * 100), aim_angle]
 
