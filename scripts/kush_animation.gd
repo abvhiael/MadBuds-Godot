@@ -30,7 +30,7 @@ var fallback: CanvasItem
 
 func _ready() -> void:
 	sprite = Sprite2D.new()
-	sprite.scale = Vector2(0.085, 0.085)
+	sprite.scale = Vector2(0.16, 0.16)
 	add_child(sprite)
 	fallback = get_parent().get_node_or_null("PlaceholderBody") as CanvasItem
 	change_state("idle")
