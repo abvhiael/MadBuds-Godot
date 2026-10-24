@@ -29,22 +29,38 @@ jobs:
           root=pathlib.Path("assets/characters/kush-krusher/animations")
           manifests=sorted(root.glob("kk_anim_*/*.json"))
           assert len(manifests)==15, f"expected 15 manifests, got {len(manifests)}"
+          errors=[]
           found=set()
           for p in manifests:
               d=json.loads(p.read_text())
-              assert d["characterId"]=="kush_krusher" and d["frameCount"]==10
-              assert d["fps"]==10 and d["frameWidth"]==1024 and d["frameHeight"]==1024
-              assert len(d["frames"])==10
-              for i,f in enumerate(d["frames"],1):
-                  assert f["index"]==i and f["durationMs"]==100
-                  fp=p.parent/f["filename"]
-                  assert fp.is_file()
-                  assert hashlib.sha256(fp.read_bytes()).hexdigest()==f["sha256"],str(fp)
+              get=lambda a,b: d.get(a,d.get(b))
+              if get("characterId","character_id")!="kush_krusher": errors.append(f"{p}: character identity")
+              if get("frameCount","frame_count")!=10: errors.append(f"{p}: count")
+              if get("frameWidth","frame_width")!=1024 or get("frameHeight","frame_height")!=1024: errors.append(f"{p}: dimensions")
+              fps=d.get("fps")
+              if fps is not None and fps!=10: errors.append(f"{p}: FPS differs from canonical 10")
+              if fps is None and d.get("playbackTimingStatus")!="NOT_SPECIFIED_OR_VERIFIED": errors.append(f"{p}: missing timing without explicit deferred marker")
+              frames=d.get("frames",[])
+              if len(frames)!=10: errors.append(f"{p}: frames count {len(frames)}")
+              for i,frame in enumerate(frames,1):
+                  idx=frame.get("index",frame.get("frame_number",i))
+                  if idx!=i: errors.append(f"{p}: frame order {i}")
+                  ms=frame.get("durationMs",frame.get("duration_ms",d.get("frame_duration_ms",d.get("frameDurationMs"))))
+                  if ms is not None and ms!=100: errors.append(f"{p}: frame {i} timing {ms}")
+                  if ms is None and d.get("playbackTimingStatus")!="NOT_SPECIFIED_OR_VERIFIED": errors.append(f"{p}: missing frame duration {i}")
+                  name=frame.get("filename",frame.get("file"))
+                  expected=f"kush_krusher_anim_{p.parent.name[8:]}_frame_{i:02d}.png"
+                  if name!=expected: errors.append(f"{p}: wrong file/order {i}: {name}")
+                  fp=p.parent/(name or "")
+                  if not fp.is_file(): errors.append(f"{p}: missing {name}"); continue
+                  digest=hashlib.sha256(fp.read_bytes()).hexdigest()
+                  if digest!=frame.get("sha256"): errors.append(f"{fp}: checksum mismatch")
+                  if fp.read_bytes()[:8]!=b"\\x89PNG\\r\\n\\x1a\\n": errors.append(f"{fp}: not a PNG")
                   found.add(fp)
-          assert len(found)==150, f"expected 150 verified frames, got {len(found)}"
           actual=set(root.glob("kk_anim_*/*.png"))
-          assert actual==found, f"unexpected or unverified PNGs: {len(actual^found)}"
-          print("PASS: 15 verified manifests / 150 exact SHA-256 PNGs")
+          if len(found)!=150 or actual!=found: errors.append(f"expected exact 150 files, found {len(found)} verified filenames and {len(actual)} actual")
+          if errors: raise AssertionError("\\n".join(errors))
+          print("PASS: 15 manifests, 150 exact SHA-256 PNGs; canonical 10 FPS adapter for source 05 unspecified timing")
           PY
       - name: Commit unchanged qualified source assets
         run: |
