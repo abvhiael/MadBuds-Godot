@@ -1,0 +1,31 @@
+name: MIG-0.4 Godot Integrity and Runtime Qualification
+on:
+  pull_request:
+    paths:
+      - 'tests/verify_mig_0_4_assets.py'
+      - '.github/workflows/mig-0-4-godot.yml'
+      - 'assets/characters/kush-krusher/animations/**'
+      - 'scenes/**'
+      - 'scripts/**'
+      - 'project.godot'
+  workflow_dispatch:
+jobs:
+  integrity-and-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify all PNG bytes and manifests
+        run: python3 tests/verify_mig_0_4_assets.py
+      - name: Install Godot 4.4.1
+        run: |
+          curl -fL --retry 3 -o godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          chmod +x Godot_v4.4.1-stable_linux.x86_64
+      - name: Godot headless import
+        run: ./Godot_v4.4.1-stable_linux.x86_64 --headless --path . --editor --quit
+      - name: Imported texture and clip playback
+        run: ./Godot_v4.4.1-stable_linux.x86_64 --headless --path . --script res://tests/test_animation_assets.gd
+      - name: Gameplay contract
+        run: ./Godot_v4.4.1-stable_linux.x86_64 --headless --path . --script res://tests/test_kush_contract.gd
+      - name: Real-scene integration
+        run: ./Godot_v4.4.1-stable_linux.x86_64 --headless --path . --script res://tests/test_mb3_level2.gd
