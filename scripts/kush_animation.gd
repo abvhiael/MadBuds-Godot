@@ -22,6 +22,8 @@ const CLIPS := {
 var state := "idle"
 var frame_index := 0
 var elapsed := 0.0
+const LAUNCH_FPS := 6.0
+const LAUNCH_FRAMES := 10
 var sprite: Sprite2D
 var cache := {}
 var fallback: CanvasItem
@@ -46,11 +48,18 @@ func change_state(next: String) -> void:
 
 func _process(delta: float) -> void:
 	elapsed += delta
-	var duration := 1.0 / maxf(1.0, frames_per_second)
+	var fps: float = LAUNCH_FPS if state == "launch" else frames_per_second
+	var duration := 1.0 / maxf(1.0, fps)
 	if elapsed >= duration:
 		var advances := int(elapsed / duration)
 		elapsed = fmod(elapsed, duration)
-		frame_index = (frame_index + advances) % 10
+		if state == "launch":
+			if frame_index + advances >= LAUNCH_FRAMES:
+				change_state("flight")
+				return
+			frame_index += advances
+		else:
+			frame_index = (frame_index + advances) % 10
 		_render_frame()
 
 func _render_frame() -> void:
