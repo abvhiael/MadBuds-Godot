@@ -55,7 +55,7 @@ jobs:
                   if not fp.is_file(): errors.append(f"{p}: missing {name}"); continue
                   digest=hashlib.sha256(fp.read_bytes()).hexdigest()
                   if digest!=frame.get("sha256"): errors.append(f"{fp}: checksum mismatch")
-                  if fp.read_bytes()[:8]!=b"\\x89PNG\\r\\n\\x1a\\n": errors.append(f"{fp}: not a PNG")
+                  if fp.read_bytes()[:8]!=bytes.fromhex("89504e470d0a1a0a"): errors.append(f"{fp}: not a PNG")
                   found.add(fp)
           actual=set(root.glob("kk_anim_*/*.png"))
           if len(found)!=150 or actual!=found: errors.append(f"expected exact 150 files, found {len(found)} verified filenames and {len(actual)} actual")
