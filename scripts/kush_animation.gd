@@ -3,14 +3,20 @@ class_name KushAnimation
 
 const CLIPS := {
 	"idle": "01_idle_annoyed",
+	"impatient": "02_idle_foot_tap",
 	"loading": "03_cannon_loading",
 	"launch": "04_compression_launch",
+	"tumble": "05_airborne_tumble",
 	"flight": "07_heavy_flight",
 	"wreck": "06_wrecking_ball",
 	"impact": "08_impact_squash",
 	"recovery": "09_stuck_recovery",
 	"victory": "10_victory_fist_raise",
-	"failure": "11_irritated_failure"
+	"failure": "11_irritated_failure",
+	"laughing": "12_laughing",
+	"angry": "13_angry",
+	"thumbs_down": "14_thumbs_down",
+	"thumbs_up": "15_thumbs_up"
 }
 @export var frames_per_second := 10.0
 var state := "idle"
