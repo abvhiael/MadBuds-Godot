@@ -3,6 +3,7 @@ class_name KushKrusher
 
 signal ability_activated
 signal ability_expired
+signal collided_with_object(body: Node, speed: float, mass_at_impact: float, multiplier: float)
 
 const CHARACTER_ID: StringName = &"kush-krusher"
 const ABILITY_ID: StringName = &"wrecking-ball"
@@ -20,6 +21,7 @@ func _ready() -> void:
 	linear_damp = 0.35
 	angular_damp = 1.0
 	contact_monitor = true
+	body_entered.connect(_on_body_entered)
 	max_contacts_reported = 8
 	freeze = true
 
@@ -64,3 +66,7 @@ func reset_for_next_shot() -> void:
 	launched = false
 	ability_used = false
 	ability_remaining = 0.0
+
+func _on_body_entered(body: Node) -> void:
+	var multiplier := 1.75 if ability_active else 1.0
+	collided_with_object.emit(body, linear_velocity.length(), mass, multiplier)
