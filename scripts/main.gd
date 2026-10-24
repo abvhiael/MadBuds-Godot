@@ -80,6 +80,9 @@ func _set_animation(state: String) -> void:
 func _on_bud_collision(body: Node, speed: float, impact_mass: float, modifier: float) -> void:
 	if body is MadBudsDestructible:
 		(body as MadBudsDestructible).receive_impact(speed, impact_mass, modifier)
+		if body == target and (body as MadBudsDestructible).broken and not target_hit:
+			target_hit = true
+			refresh_hud()
 	_set_animation("impact")
 
 func _on_body_entered(body: Node) -> void:
