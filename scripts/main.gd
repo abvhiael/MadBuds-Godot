@@ -11,6 +11,10 @@ var shots := 0
 var aim_angle := -35.0
 var launch_power := 0.7
 var target_hit := false
+var preparing_launch := false
+var loading_remaining := 0.0
+var pending_launch_velocity := Vector2.ZERO
+const LOADING_SECONDS := 0.45
 var resolution_elapsed := 0.0
 var settle_elapsed := 0.0
 const MAX_SHOT_SECONDS := 14.0
@@ -33,6 +37,8 @@ func spawn_bud() -> void:
 	bud.body_entered.connect(_on_body_entered)
 	resolution_elapsed = 0.0
 	settle_elapsed = 0.0
+	preparing_launch = false
+	loading_remaining = 0.0
 	bud.ability_activated.connect(_on_ability_activated)
 	bud.ability_expired.connect(_on_ability_expired)
 	bud.collided_with_object.connect(_on_bud_collision)
@@ -49,11 +55,15 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_DOWN:
 				launch_power = clampf(launch_power - 0.05, 0.1, 1.0)
 			KEY_SPACE:
-				if not bud.launched:
+				if not bud.launched and not preparing_launch:
 					var direction := Vector2.RIGHT.rotated(deg_to_rad(aim_angle))
-					bud.launch(direction * MAX_SPEED * launch_power * 0.9)
-					_set_animation("launch")
+					pending_launch_velocity = direction * MAX_SPEED * launch_power * 0.9
+					preparing_launch = true
+					loading_remaining = LOADING_SECONDS
+					_set_animation("loading")
 					shots += 1
+				elif preparing_launch:
+					pass
 				else:
 					bud.activate_wrecking_ball()
 			KEY_R:
@@ -64,6 +74,12 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(bud):
 		return
+	if preparing_launch:
+		loading_remaining -= delta
+		if loading_remaining <= 0.0:
+			preparing_launch = false
+			bud.launch(pending_launch_velocity)
+			_set_animation("launch")
 	if bud.launched:
 		resolution_elapsed += delta
 		if bud.linear_velocity.length() < 22.0 and not bud.ability_active:
@@ -106,7 +122,9 @@ func refresh_hud() -> void:
 	if not is_instance_valid(bud):
 		return
 	var state := "READY"
-	if bud.launched:
+	if preparing_launch:
+		state = "LOADING CANNON"
+	elif bud.launched:
 		state = "WRECKING BALL!" if bud.ability_active else "IN FLIGHT"
 	if target_hit:
 		state = "TARGET DESTROYED!"
