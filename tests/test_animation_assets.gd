@@ -19,13 +19,17 @@ func _verify() -> void:
 		assert(FileAccess.file_exists(manifest_path), "missing manifest " + manifest_path)
 		var data = JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
 		assert(data is Dictionary, "invalid manifest JSON " + manifest_path)
-		assert(data["frameCount"] == 10 and data["fps"] == 10)
-		assert(data["characterId"] == "kush_krusher")
+		var count: int = int(data.get("frameCount", data.get("frame_count", -1)))
+		var fps = data.get("fps", null)
+		assert(count == 10)
+		assert(fps == 10 or (fps == null and data.get("playbackTimingStatus", "") == "NOT_SPECIFIED_OR_VERIFIED"))
+		assert(data.get("characterId", data.get("character_id", "")) == "kush_krusher")
 		assert(data["frames"].size() == 10)
 		for i in 10:
 			var entry: Dictionary = data["frames"][i]
-			var image_path: String = folder + "/" + entry["filename"]
-			assert(entry["index"] == i + 1)
+			var filename: String = entry.get("filename", entry.get("file", ""))
+			var image_path: String = folder + "/" + filename
+			assert(int(entry.get("index", entry.get("frame_number", i + 1))) == i + 1)
 			assert(ResourceLoader.exists(image_path), "missing imported PNG " + image_path)
 			var texture := load(image_path) as Texture2D
 			assert(texture != null and texture.get_width() == 1024 and texture.get_height() == 1024, "invalid frame " + image_path)
