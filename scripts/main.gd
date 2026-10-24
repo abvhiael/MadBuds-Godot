@@ -27,8 +27,8 @@ func spawn_bud() -> void:
 	add_child(bud)
 	bud.position = LAUNCH_POSITION
 	bud.body_entered.connect(_on_body_entered)
-	bud.ability_activated.connect(func() -> void: _set_animation("wreck"); refresh_hud())
-	bud.ability_expired.connect(func() -> void: _set_animation("flight"); refresh_hud())
+	bud.ability_activated.connect(_on_ability_activated)
+	bud.ability_expired.connect(_on_ability_expired)
 	bud.collided_with_object.connect(_on_bud_collision)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -65,6 +65,14 @@ func _physics_process(_delta: float) -> void:
 		refresh_hud()
 	queue_redraw()
 
+func _on_ability_activated() -> void:
+	_set_animation("wreck")
+	refresh_hud()
+
+func _on_ability_expired() -> void:
+	_set_animation("flight")
+	refresh_hud()
+
 func _set_animation(state: String) -> void:
 	if is_instance_valid(bud) and bud.has_node("KushAnimation"):
 		bud.get_node("KushAnimation").change_state(state)
@@ -75,7 +83,9 @@ func _on_bud_collision(body: Node, speed: float, impact_mass: float, modifier: f
 	_set_animation("impact")
 
 func _on_body_entered(body: Node) -> void:
-	if body == target and not target_hit and (target as MadBudsDestructible).broken:
+	if body == target and not target_hit:
+		if not (target as MadBudsDestructible).broken:
+			return
 		target_hit = true
 		refresh_hud()
 
