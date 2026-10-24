@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'scripts/**'
+      - 'assets/characters/kush-krusher/animations/**'
       - 'scenes/**'
       - 'tests/**'
       - 'project.godot'
@@ -19,5 +20,7 @@ jobs:
           chmod +x Godot_v4.4.1-stable_linux.x86_64
       - name: Import and parse project
         run: ./Godot_v4.4.1-stable_linux.x86_64 --headless --path . --editor --quit
+      - name: Validate imported clip playback metadata
+        run: ./Godot_v4.4.1-stable_linux.x86_64 --headless --path . --script res://tests/test_animation_assets.gd
       - name: Focused gameplay contract tests
         run: ./Godot_v4.4.1-stable_linux.x86_64 --headless --path . --script res://tests/test_kush_contract.gd
