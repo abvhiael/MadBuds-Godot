@@ -1,6 +1,9 @@
 extends SceneTree
 # Headless: godot --headless --path . --script res://tests/test_kush_contract.gd
-func _initialize() -> void:
+func _init() -> void:
+	call_deferred("_run")
+
+func _run() -> void:
 	var bud_script = load("res://scripts/kush_krusher.gd")
 	var bud = bud_script.new()
 	root.add_child(bud)
