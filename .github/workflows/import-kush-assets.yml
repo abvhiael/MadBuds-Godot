@@ -69,5 +69,7 @@ jobs:
           git add assets/characters/kush-krusher/animations
           if ! git diff --cached --quiet; then
             git commit -m "assets: import all 15 pinned Kush Krusher animations with verified PNG checksums"
+            git fetch origin feature/mb3-kush-animation-destruction
+            git rebase origin/feature/mb3-kush-animation-destruction
             git push origin HEAD:feature/mb3-kush-animation-destruction
           fi
