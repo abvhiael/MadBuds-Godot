@@ -1,0 +1,57 @@
+name: Import verified approved Kush Krusher assets
+on:
+  push:
+    branches: [feature/mb3-kush-animation-destruction]
+    paths:
+      - '.github/workflows/import-kush-assets.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import-approved-frames:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Fetch pinned public canonical assets
+        run: |
+          git clone --quiet --filter=blob:none --no-checkout https://github.com/abvhiael/420-integrated-v0.1.git /tmp/420source
+          git -C /tmp/420source sparse-checkout init --cone
+          git -C /tmp/420source sparse-checkout set assets/arcade/mad-buds/kush-krusher/animations
+          git -C /tmp/420source checkout d539720de90a78523470b4c210a773ba18119e70
+          mkdir -p assets/characters/kush-krusher/animations
+          cp -a /tmp/420source/assets/arcade/mad-buds/kush-krusher/animations/. assets/characters/kush-krusher/animations/
+      - name: Verify every approved frame and manifest against pinned source
+        run: |
+          python3 - <<'PY'
+          import json,hashlib,pathlib
+          root=pathlib.Path("assets/characters/kush-krusher/animations")
+          manifests=sorted(root.glob("kk_anim_*/*.json"))
+          assert len(manifests)==15, f"expected 15 manifests, got {len(manifests)}"
+          found=set()
+          for p in manifests:
+              d=json.loads(p.read_text())
+              assert d["characterId"]=="kush_krusher" and d["frameCount"]==10
+              assert d["fps"]==10 and d["frameWidth"]==1024 and d["frameHeight"]==1024
+              assert len(d["frames"])==10
+              for i,f in enumerate(d["frames"],1):
+                  assert f["index"]==i and f["durationMs"]==100
+                  fp=p.parent/f["filename"]
+                  assert fp.is_file()
+                  assert hashlib.sha256(fp.read_bytes()).hexdigest()==f["sha256"],str(fp)
+                  found.add(fp)
+          assert len(found)==150, f"expected 150 verified frames, got {len(found)}"
+          actual=set(root.glob("kk_anim_*/*.png"))
+          assert actual==found, f"unexpected or unverified PNGs: {len(actual^found)}"
+          print("PASS: 15 verified manifests / 150 exact SHA-256 PNGs")
+          PY
+      - name: Commit unchanged qualified source assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/characters/kush-krusher/animations
+          if ! git diff --cached --quiet; then
+            git commit -m "assets: import all 15 pinned Kush Krusher animations with verified PNG checksums"
+            git push origin HEAD:feature/mb3-kush-animation-destruction
+          fi
