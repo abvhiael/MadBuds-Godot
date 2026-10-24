@@ -18,11 +18,13 @@ var frame_index := 0
 var elapsed := 0.0
 var sprite: Sprite2D
 var cache := {}
+var fallback: CanvasItem
 
 func _ready() -> void:
 	sprite = Sprite2D.new()
 	sprite.scale = Vector2(0.085, 0.085)
 	add_child(sprite)
+	fallback = get_parent().get_node_or_null("PlaceholderBody") as CanvasItem
 	change_state("idle")
 
 func change_state(next: String) -> void:
@@ -57,3 +59,5 @@ func _render_frame() -> void:
 		sprite.visible = true
 	else:
 		sprite.visible = false
+	if fallback != null:
+		fallback.visible = not sprite.visible
