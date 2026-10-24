@@ -27,8 +27,9 @@ func spawn_bud() -> void:
 	add_child(bud)
 	bud.position = LAUNCH_POSITION
 	bud.body_entered.connect(_on_body_entered)
-	bud.ability_activated.connect(refresh_hud)
-	bud.ability_expired.connect(refresh_hud)
+	bud.ability_activated.connect(func() -> void: _set_animation("wreck"); refresh_hud())
+	bud.ability_expired.connect(func() -> void: _set_animation("flight"); refresh_hud())
+	bud.collided_with_object.connect(_on_bud_collision)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -45,6 +46,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				if not bud.launched:
 					var direction := Vector2.RIGHT.rotated(deg_to_rad(aim_angle))
 					bud.launch(direction * MAX_SPEED * launch_power * 0.9)
+					_set_animation("launch")
 					shots += 1
 				else:
 					bud.activate_wrecking_ball()
@@ -59,11 +61,21 @@ func _physics_process(_delta: float) -> void:
 	if bud.launched and (bud.position.y > 900.0 or bud.position.x > 1500.0 or bud.position.x < -150.0):
 		bud.reset_for_next_shot()
 		bud.position = LAUNCH_POSITION
+		_set_animation("idle")
 		refresh_hud()
 	queue_redraw()
 
+func _set_animation(state: String) -> void:
+	if is_instance_valid(bud) and bud.has_node("KushAnimation"):
+		bud.get_node("KushAnimation").change_state(state)
+
+func _on_bud_collision(body: Node, speed: float, impact_mass: float, modifier: float) -> void:
+	if body is MadBudsDestructible:
+		(body as MadBudsDestructible).receive_impact(speed, impact_mass, modifier)
+	_set_animation("impact")
+
 func _on_body_entered(body: Node) -> void:
-	if body == target and not target_hit:
+	if body == target and not target_hit and (target as MadBudsDestructible).broken:
 		target_hit = true
 		refresh_hud()
 
